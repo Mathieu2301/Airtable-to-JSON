@@ -1,0 +1,5 @@
+node_modules/
+inputs/
+outputs/
+*.config.ts
+yarn-error.log
