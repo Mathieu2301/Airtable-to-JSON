@@ -117,11 +117,11 @@ import('../../fuser.config'.toString()).then((confImp) => {
           ? colProjFn(r[colInitialName])
           : r[colInitialName];
 
-        if (val !== undefined) {
-          if (row[colNewName] !== undefined) reportCol(overwritedCols, colNewName, val);
-          row[colNewName] = val;
-          delete r[colInitialName];
-        }
+        if (val === undefined) continue;
+
+        if (row[colNewName] !== undefined) reportCol(overwritedCols, colNewName, val);
+        row[colNewName] = val;
+        delete r[colInitialName];
       }
 
       for (const colName in r) reportCol(untreatedCols, colName, r[colName]);
