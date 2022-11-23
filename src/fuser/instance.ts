@@ -46,7 +46,13 @@ function mergeBy(arr: ResultRow[], key: string): ResultRow[] {
     for (const col in row) {
       if ([key, '_date'].includes(col)) continue;
       const val = row[col];
-      if (merged[k][col] && JSON.stringify(merged[k][col]) !== JSON.stringify(val)) {
+
+      if (merged[k][col] === undefined) {
+        merged[k][col] = val;
+        continue;
+      }
+
+      if (JSON.stringify(merged[k][col]) !== JSON.stringify(val)) {
         if (row._date > merged[k]._date) {
           console.warn(`  - Overwriting '${col}' in '${k}'`);
           console.log(`     '${merged[k][col]}' -> '${val}'`);
@@ -82,7 +88,7 @@ import('../../fuser.config'.toString()).then((confImp) => {
   const untreatedCols: ColReports = {};
   const overwritedCols: ColReports = {};
 
-  function reportCol(store: ColReports, file: string, colName: string, value: any) {
+  function reportCol(store: ColReports, colName: string, value: any) {
     if (!store[colName]) {
       store[colName] = {
         count: 0,
@@ -101,21 +107,24 @@ import('../../fuser.config'.toString()).then((confImp) => {
     for (const r of o) {
       const row: ResultRow = { _date: new Date(r._date) };
       delete r._date;
+
       for (const colInitialName in config.projection) {
-        const colNewName = config.projection[colInitialName];
-        if (r[colInitialName] !== undefined) {
-          if (row[colNewName] !== undefined) reportCol(
-            overwritedCols,
-            f,
-            colNewName,
-            r[colInitialName],
-          );
-          row[colNewName] = r[colInitialName];
+        const colProj = config.projection[colInitialName];
+        const colNewName = typeof colProj === 'string' ? colProj : colProj[0];
+        const colProjFn = typeof colProj === 'string' ? undefined : colProj[1];
+
+        const val = (colProjFn && r[colInitialName])
+          ? colProjFn(r[colInitialName])
+          : r[colInitialName];
+
+        if (val !== undefined) {
+          if (row[colNewName] !== undefined) reportCol(overwritedCols, colNewName, val);
+          row[colNewName] = val;
           delete r[colInitialName];
         }
       }
 
-      for (const colName in r) reportCol(untreatedCols, f, colName, r[colName]);
+      for (const colName in r) reportCol(untreatedCols, colName, r[colName]);
 
       formattedOut.push(row);
     }
@@ -139,7 +148,7 @@ import('../../fuser.config'.toString()).then((confImp) => {
     }
   }
 
-  const mergedOut = config.uniqueKey ? mergeBy(formattedOut, config.uniqueKey) : formattedOut;  
+  const mergedOut = config.uniqueKey ? mergeBy(formattedOut, config.uniqueKey) : formattedOut;
   const dateCleanedOut = config.removeDate ? removeDate(mergedOut) : mergedOut;
 
   console.log(`\nWriting ${dateCleanedOut.length} entries to 'merged.output.json'...`);

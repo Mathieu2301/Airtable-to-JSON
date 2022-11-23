@@ -1,3 +1,4 @@
+type ValPorjector<T> = [string, (val: T) => T];
 export default interface FuserConfig {
   /**
    * The column name that will
@@ -16,7 +17,7 @@ export default interface FuserConfig {
    * Airtable table and the value is the
    * column name wanted in the output file.
    */
-  projection: { [key: string]: string },
+  projection: { [key: string]: (string | ValPorjector<any>) },
 
   /**
    * Set it to true if you want to remove
